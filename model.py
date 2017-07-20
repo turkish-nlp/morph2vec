@@ -1,51 +1,3 @@
-from __future__ import print_function
-
-import numpy
-from keras.engine import Model
-from keras.layers import Embedding
-from keras.layers import LSTM
-from keras.layers import Input
-from keras import regularizers
-from keras.layers.core import (Flatten, Dense, Lambda)
-from keras.layers.wrappers import Bidirectional
-import keras.backend as K
-
-print('================  Prepare data...  ================')
-print('')
-
-word2sgmt = {}
-seq = []
-morphs = []
-with open('train.data') as f:
-    for line in f:
-        word, sgmnts = line.split(':')
-        sgmt = sgmnts.split('+')
-        sgmt = list(s.split('-') for s in sgmt)
-        word2sgmt[word] = sgmt
-        seq.extend(sgmt)
-
-for sgmt in seq:
-    for morph in sgmt:
-        morphs.append(morph)
-
-print('number of words: ', len(word2sgmt))
-
-morph_indices = dict((c, i) for i, c in enumerate(set(morphs)))
-indices_morph = dict((i, c) for i, c in enumerate(set(morphs)))
-
-print('number of morphemes: ', len(morphs))
-
-x_train_1 = numpy.array([[1,2,3],[1,2,3]],numpy.int32)
-x_train_2 = numpy.array([[2,4,1],[2,4,1]],numpy.int32)
-
-print('================  Load pre-trained word vectors...  ================')
-print('')
-
-y_train = numpy.array([[4,5,2],[2,4,1]],numpy.int32)
-
-print('================  Build model...  ================')
-print('')
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -64,10 +16,57 @@ from keras import regularizers
 from keras.layers.merge import concatenate
 import keras.backend as K
 
+number_of_segmentation = 2;
+
+print('================  Prepare data...  ================')
+print('')
+
+word2sgmt = {}
+seq = []
+morphs = []
+with open('train.data') as f:
+    for line in f:
+        line = line.rstrip('\n')
+        word, sgmnts = line.split(':')
+        sgmt = sgmnts.split('+')
+        sgmt = list(s.split('-') for s in sgmt)
+        word2sgmt[word] = sgmt
+        seq.extend(sgmt)
+
+for sgmt in seq:
+    for morph in sgmt:
+        morphs.append(morph)
+
+print('number of words: ', len(word2sgmt))
+
+morph_indices = dict((c, i) for i, c in enumerate(set(morphs)))
+indices_morph = dict((i, c) for i, c in enumerate(set(morphs)))
+
+print('number of morphemes: ', len(morphs))
+
+x_train = [[] for i in range(number_of_segmentation)]
+for word in word2sgmt:
+    for segmnt in word2sgmt[word]:
+        x_train[word2sgmt[word].index(segmnt)].append([morph_indices[c] for c in segmnt])
+
+for i in range(number_of_segmentation):
+    x_train[i] = numpy.array(x_train[i])
+
+print('')
+print('================  Load pre-trained word vectors...  ================')
+print('')
+
+y_train = numpy.array([[4,5,2],[2,4,1],[2,4,1],[2,4,1]])
+
+print('')
+print('================  Build model...  ================')
+print('')
+
+
 morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
 morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 
-morph_embedding = Embedding(input_dim=10, output_dim=64, mask_zero=True)
+morph_embedding = Embedding(input_dim=len(morphs), output_dim=64, mask_zero=True)
 
 embed_seq_1 = morph_embedding(morph_seq_1)
 embed_seq_2 = morph_embedding(morph_seq_2)
@@ -113,4 +112,4 @@ model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']
 
 model.summary()
 
-model.fit([x_train_1,x_train_2], y_train, 1)
+model.fit([x_train[i] for i in range(number_of_segmentation)], y_train, 1)
