@@ -1,13 +1,7 @@
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
 import numpy
-from scipy.spatial.distance import cosine
 
 from keras.engine import Model
 from keras.layers.embeddings import Embedding
-from keras.layers import merge
 from keras.layers.recurrent import LSTM
 from keras.layers.core import Flatten, Dense, Activation, Lambda, Reshape
 from keras.layers import Input
@@ -15,8 +9,14 @@ from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras import regularizers
 from keras.layers.merge import concatenate
 import keras.backend as K
+from gensim.models import Word2Vec, KeyedVectors
+from keras.utils import plot_model
 
-number_of_segmentation = 2;
+number_of_segmentation = 2
+
+gensim_model = "pre_trained_model"
+
+load_pretrained_vector = False
 
 print('================  Prepare data...  ================')
 print('')
@@ -55,6 +55,14 @@ for i in range(number_of_segmentation):
 print('')
 print('================  Load pre-trained word vectors...  ================')
 print('')
+
+# w2v_model = Word2Vec.load(gensim_model)
+y_train = []
+
+if load_pretrained_vector:
+    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=False)
+    for word in word2sgmt:
+        y_train.append(w2v_model[word])
 
 y_train = numpy.array([[4,5,2],[2,4,1],[2,4,1],[2,4,1]])
 
@@ -111,5 +119,6 @@ model = Model(inputs=[morph_seq_1, morph_seq_2], outputs=content_flat)
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
+plot_model(model, show_shapes=True, to_file='model.png')
 
 model.fit([x_train[i] for i in range(number_of_segmentation)], y_train, 1)
