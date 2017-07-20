@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy
 
 from keras.engine import Model
@@ -14,7 +15,7 @@ from keras.utils import plot_model
 
 number_of_segmentation = 2
 
-gensim_model = "pre_trained_model"
+gensim_model = "C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin"
 
 load_pretrained_vector = False
 
@@ -37,7 +38,7 @@ for sgmt in seq:
     for morph in sgmt:
         morphs.append(morph)
 
-print('number of words: ', len(word2sgmt))
+print ('number of words: ', len(word2sgmt))
 
 morph_indices = dict((c, i) for i, c in enumerate(set(morphs)))
 indices_morph = dict((i, c) for i, c in enumerate(set(morphs)))
@@ -60,11 +61,16 @@ print('')
 y_train = []
 
 if load_pretrained_vector:
-    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=False)
+    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=True)
     for word in word2sgmt:
-        y_train.append(w2v_model[word])
+        y_train.append(w2v_model[word].tolist())
 
-y_train = numpy.array([[4,5,2],[2,4,1],[2,4,1],[2,4,1]])
+y_train = numpy.array(y_train)
+
+# y_train = numpy.array([[4,5,2],[2,4,1],[2,4,1],[2,4,1]])
+
+print('number of pre-trained vectors: ', len(w2v_model.vocab))
+print('number of words found: ', len(y_train))
 
 print('')
 print('================  Build model...  ================')
@@ -74,22 +80,22 @@ print('')
 morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
 morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 
-morph_embedding = Embedding(input_dim=len(morphs), output_dim=64, mask_zero=True)
+morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
 
 embed_seq_1 = morph_embedding(morph_seq_1)
 embed_seq_2 = morph_embedding(morph_seq_2)
 
-biLSTM = Bidirectional(LSTM(3, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
+biLSTM = Bidirectional(LSTM(200, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
 
 encoded_seq_1 = biLSTM(embed_seq_1)
 encoded_seq_2 = biLSTM(embed_seq_2)
 
 concat_vector = concatenate([encoded_seq_1, encoded_seq_2], axis=-1)
-merge_vector = Reshape((2,6))(concat_vector)
+merge_vector = Reshape((2,400))(concat_vector)
 
-seq_output = TimeDistributed(Dense(3))(merge_vector)
+seq_output = TimeDistributed(Dense(200))(merge_vector)
 
-attention_1 = TimeDistributed(Dense(output_dim=3, activation='tanh', bias=False))(seq_output)
+attention_1 = TimeDistributed(Dense(output_dim=200, activation='tanh', bias=False))(seq_output)
 
 attention_2 = TimeDistributed(Dense(output_dim=1,
                                             activity_regularizer=regularizers.l1(0.01),
