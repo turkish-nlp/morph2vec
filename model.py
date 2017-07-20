@@ -19,7 +19,7 @@ gensim_model = "C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin"
 
 load_pretrained_vector = False
 
-print('================  Prepare data...  ================')
+print('===================================  Prepare data...  ==============================================')
 print('')
 
 word2sgmt = {}
@@ -54,7 +54,7 @@ for i in range(number_of_segmentation):
     x_train[i] = numpy.array(x_train[i])
 
 print('')
-print('================  Load pre-trained word vectors...  ================')
+print('==========================  Load pre-trained word vectors...  ======================================')
 print('')
 
 # w2v_model = Word2Vec.load(gensim_model)
@@ -73,7 +73,7 @@ print('number of pre-trained vectors: ', len(w2v_model.vocab))
 print('number of words found: ', len(y_train))
 
 print('')
-print('================  Build model...  ================')
+print('===================================  Build model...  ===============================================')
 print('')
 
 
