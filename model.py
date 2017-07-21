@@ -18,7 +18,7 @@ number_of_segmentation = 2
 
 gensim_model = "C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin"
 
-load_pretrained_vector = False
+load_pretrained_vector = True
 
 print('===================================  Prepare data...  ==============================================')
 print('')
@@ -96,22 +96,22 @@ print('')
 morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
 morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 
-morph_embedding = Embedding(input_dim=len(morphs), output_dim=3, mask_zero=True)
+morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
 
 embed_seq_1 = morph_embedding(morph_seq_1)
 embed_seq_2 = morph_embedding(morph_seq_2)
 
-biLSTM = Bidirectional(LSTM(3, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
+biLSTM = Bidirectional(LSTM(200, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
 
 encoded_seq_1 = biLSTM(embed_seq_1)
 encoded_seq_2 = biLSTM(embed_seq_2)
 
 concat_vector = concatenate([encoded_seq_1, encoded_seq_2], axis=-1)
-merge_vector = Reshape((2,6))(concat_vector)
+merge_vector = Reshape((2,400))(concat_vector)
 
-seq_output = TimeDistributed(Dense(3))(merge_vector)
+seq_output = TimeDistributed(Dense(200))(merge_vector)
 
-attention_1 = TimeDistributed(Dense(units=3, activation='tanh', use_bias=False))(seq_output)
+attention_1 = TimeDistributed(Dense(units=200, activation='tanh', use_bias=False))(seq_output)
 
 attention_2 = TimeDistributed(Dense(units=1,
                                             activity_regularizer=regularizers.l1(0.01),
