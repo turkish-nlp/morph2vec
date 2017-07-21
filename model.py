@@ -85,7 +85,7 @@ else:
 
 print('number of words found: ', len(y_train))
 
-print('shapes of Y: ',y_train.shape)
+print('shape of Y: ', y_train.shape)
 
 
 print('')
@@ -141,7 +141,7 @@ model = Model(inputs=[morph_seq_1, morph_seq_2], outputs=content_flat)
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
-plot_model(model, show_shapes=True, to_file='model.png')
+# plot_model(model, show_shapes=True, to_file='model.png')
 
 model.fit([x_train[i] for i in range(number_of_segmentation)], y_train, 1)
 
@@ -149,7 +149,20 @@ f_attn = K.function([model.layers[0].input, model.layers[1].input, K.learning_ph
 
 attention_weights = f_attn([x_train[0],x_train[1],0])[0]
 
+print('')
 print('attention weights without softmax:\n', attention_weights)
+print('')
+
+
+def attn_softmax(y, axis=None):
+    y = y - numpy.expand_dims(numpy.max(y, axis=axis), axis)
+    y = numpy.exp(y)
+    ax_sum = numpy.expand_dims(numpy.sum(y, axis=axis), axis)
+    return y / ax_sum
+
+attention_soft_weights = attn_softmax(attention_weights,axis=1)
+
+print('attention weights with softmax:\n', attention_soft_weights)
 
 '''
 print('')
