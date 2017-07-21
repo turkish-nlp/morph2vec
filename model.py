@@ -17,7 +17,7 @@ number_of_segmentation = 2
 
 gensim_model = "C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin"
 
-load_pretrained_vector = False
+load_pretrained_vector = True
 
 print('===================================  Prepare data...  ==============================================')
 print('')
@@ -128,3 +128,9 @@ model.summary()
 plot_model(model, show_shapes=True, to_file='model.png')
 
 model.fit([x_train[i] for i in range(number_of_segmentation)], y_train, 1)
+
+f = K.function([model.layers[0].input, model.layers[1].input, K.learning_phase()], [model.layers[-2].output])
+
+attention_weights = f([x_train[0],x_train[1],0])[0]
+
+print(attention_weights)
