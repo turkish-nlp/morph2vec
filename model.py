@@ -16,7 +16,7 @@ from keras.preprocessing import sequence
 
 number_of_segmentation = 2
 
-gensim_model = "C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin"
+gensim_model = "/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin"
 
 load_pretrained_vector = True
 
@@ -26,7 +26,7 @@ print('')
 word2sgmt = {}
 seq = []
 morphs = []
-with open('train.data') as f:
+with open('train.data.eng') as f:
     for line in f:
         line = line.rstrip('\n')
         word, sgmnts = line.split(':')
@@ -47,6 +47,8 @@ print ('number of words: ', len(word2sgmt))
 morph_indices = dict((c, i+1) for i, c in enumerate(set(morphs)))
 indices_morph = dict((i+1, c) for i, c in enumerate(set(morphs)))
 
+print('morpheme indices: ', indices_morph)
+
 print('number of morphemes: ', len(morphs))
 print('number of unique morphemes: ', len(set(morphs)))
 
@@ -54,6 +56,11 @@ x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
     for segmnt in word2sgmt[word]:
         x_train[word2sgmt[word].index(segmnt)].append([morph_indices[c] for c in segmnt])
+
+print('')
+for i in range(number_of_segmentation):
+    print(i,'. Group Segmentations : ', x_train[i])
+print('')
 
 for i in range(number_of_segmentation):
     x_train[i] = numpy.array(x_train[i])
@@ -96,22 +103,22 @@ print('')
 morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
 morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 
-morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
+morph_embedding = Embedding(input_dim=len(morphs), output_dim=75, mask_zero=True)
 
 embed_seq_1 = morph_embedding(morph_seq_1)
 embed_seq_2 = morph_embedding(morph_seq_2)
 
-biLSTM = Bidirectional(LSTM(200, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
+biLSTM = Bidirectional(LSTM(300, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
 
 encoded_seq_1 = biLSTM(embed_seq_1)
 encoded_seq_2 = biLSTM(embed_seq_2)
 
 concat_vector = concatenate([encoded_seq_1, encoded_seq_2], axis=-1)
-merge_vector = Reshape((2,400))(concat_vector)
+merge_vector = Reshape((2,600))(concat_vector)
 
-seq_output = TimeDistributed(Dense(200))(merge_vector)
+seq_output = TimeDistributed(Dense(300))(merge_vector)
 
-attention_1 = TimeDistributed(Dense(units=200, activation='tanh', use_bias=False))(seq_output)
+attention_1 = TimeDistributed(Dense(units=300, activation='tanh', use_bias=False))(seq_output)
 
 attention_2 = TimeDistributed(Dense(units=1,
                                             activity_regularizer=regularizers.l1(0.01),
@@ -143,7 +150,7 @@ model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit([x_train[i] for i in range(number_of_segmentation)], y_train, 1)
+model.fit(x=[x_train[i] for i in range(number_of_segmentation)], y=y_train, batch_size=20, epochs=20)
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, K.learning_phase()], [model.layers[-2].output])
 
