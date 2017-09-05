@@ -1,5 +1,7 @@
 from __future__ import print_function
+from __future__ import unicode_literals
 import sys
+import codecs
 import numpy
 from keras.engine import Model
 from keras.layers.embeddings import Embedding
@@ -16,7 +18,7 @@ from keras.preprocessing import sequence
 
 number_of_segmentation = 4
 
-vector_tr = '/Users/ahmet/Desktop/MorphologySoftware/word2vec/tvec.bin'
+vector_tr = 'C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin'
 vector_eng = '/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin'
 
 gensim_model = vector_tr
@@ -27,16 +29,19 @@ print('===================================  Prepare data...  ===================
 print('')
 
 word2sgmt = {}
+word2segmentations = {}
 seq = []
 morphs = []
-with open('train.data.tr') as f:
-    for line in f:
-        line = line.rstrip('\n')
-        word, sgmnts = line.split(':')
-        sgmt = sgmnts.split('+')
-        sgmt = list(s.split('-') for s in sgmt)
-        word2sgmt[word] = sgmt
-        seq.extend(sgmt)
+
+f = codecs.open('train.data.tr', encoding='utf-8')
+for line in f:
+    line = line.rstrip('\n')
+    word, sgmnts = line.split(':')
+    sgmt = sgmnts.split('+')
+    word2segmentations[word] = list(s for s in sgmt)
+    sgmt = list(s.split('-') for s in sgmt)
+    word2sgmt[word] = sgmt
+    seq.extend(sgmt)
 
 timesteps_max_len = 0
 
@@ -57,8 +62,8 @@ print('number of unique morphemes: ', len(set(morphs)))
 
 x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
-    for segmnt in word2sgmt[word]:
-        x_train[word2sgmt[word].index(segmnt)].append([morph_indices[c] for c in segmnt])
+    for i in range(len(word2sgmt[word])):
+        x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
 
 print('')
 for i in range(number_of_segmentation):
@@ -88,11 +93,11 @@ print('')
 y_train = []
 
 if load_pretrained_vector:
-    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=True)
+    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=True, encoding='utf-8')
     for word in word2sgmt:
         y_train.append(w2v_model[word].tolist())
     y_train = numpy.array(y_train)
-    if len(y_train) is not len(word2sgmt): sys.exit(
+    if len(y_train) != len(word2sgmt): sys.exit(
         'ERROR: Pre-trained vectors do not contain all words in wordlist !!')
     print('number of pre-trained vectors: ', len(w2v_model.vocab))
 else:
@@ -114,7 +119,7 @@ morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 
 morph_seg = []
 for i in range(number_of_segmentation):
-    morph_seg[i] = Input(shape=(None,), dtype='int32')
+    morph_seg.append(Input(shape=(None,), dtype='int32'))
 
 morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
 
@@ -125,7 +130,7 @@ embed_seq_2 = morph_embedding(morph_seq_2)
 
 embed_seg = []
 for i in range(number_of_segmentation):
-    embed_seg[i] = morph_embedding(morph_seg[i])
+    embed_seg.append(morph_embedding(morph_seg[i]))
 
 biLSTM = Bidirectional(LSTM(200, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
 
@@ -136,7 +141,7 @@ encoded_seq_2 = biLSTM(embed_seq_2)
 
 encoded_seg = []
 for i in range(number_of_segmentation):
-    encoded_seg[i] = biLSTM(embed_seg[i])
+    encoded_seg.append(biLSTM(embed_seg[i]))
 
 concat_vector = concatenate(encoded_seg, axis=-1)
 merge_vector = Reshape((number_of_segmentation,400))(concat_vector)
@@ -175,7 +180,7 @@ model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=x_train, y=y_train, batch_size=1, epochs=1)
+model.fit(x=x_train, y=y_train, batch_size=32, epochs=20)
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
                      K.learning_phase()],
@@ -184,7 +189,7 @@ f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[
 attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],0])[0]
 
 print('')
-print('attention weights without softmax:\n', attention_weights)
+# print('attention weights without softmax:\n', attention_weights)
 print('')
 
 
@@ -196,7 +201,27 @@ def attn_softmax(y, axis=None):
 
 attention_soft_weights = attn_softmax(attention_weights,axis=1)
 
-print('attention weights with softmax:\n', attention_soft_weights)
+# print('attention weights with softmax:\n', attention_soft_weights)
+
+print('')
+print('====================================================================================================')
+print('')
+
+max = [0] * len(attention_soft_weights)
+selecteds = [0] * len(attention_soft_weights)
+for i in range(len(attention_soft_weights)):
+    for j in range(len(attention_soft_weights[i])):
+        if max[i] < attention_soft_weights[i][j]:
+            max[i] = attention_soft_weights[i][j]
+            selecteds[i] = j
+
+indx = 0
+segmentations = {}
+for word in word2sgmt:
+    segmentations[word]= word2segmentations[word][selecteds[0]]
+    print(word +' : '+ segmentations[word])
+    indx = indx + 1
+
 
 '''
 print('')
