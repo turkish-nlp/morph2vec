@@ -14,9 +14,12 @@ from gensim.models import Word2Vec, KeyedVectors
 from keras.utils import plot_model
 from keras.preprocessing import sequence
 
-number_of_segmentation = 2
+number_of_segmentation = 4
 
-gensim_model = "/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin"
+vector_tr = '/Users/ahmet/Desktop/MorphologySoftware/word2vec/tvec.bin'
+vector_eng = '/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin'
+
+gensim_model = vector_tr
 
 load_pretrained_vector = True
 
@@ -26,7 +29,7 @@ print('')
 word2sgmt = {}
 seq = []
 morphs = []
-with open('train.data.eng') as f:
+with open('train.data.tr') as f:
     for line in f:
         line = line.rstrip('\n')
         word, sgmnts = line.split(':')
@@ -65,12 +68,17 @@ print('')
 for i in range(number_of_segmentation):
     x_train[i] = numpy.array(x_train[i])
 
-print('shape of Xs before padding: ',x_train[0].shape, x_train[1].shape)
+print('shape of Xs before padding')
+for i in range(number_of_segmentation):
+    print(x_train[i].shape)
 
 for i in range(len(x_train)):
     x_train[i] = sequence.pad_sequences(x_train[i], maxlen=timesteps_max_len)
 
-print('shape of Xs after padding: ',x_train[0].shape, x_train[1].shape)
+print('')
+print('shape of Xs after padding')
+for i in range(number_of_segmentation):
+    print(x_train[i].shape)
 
 print('')
 print('==========================  Load pre-trained word vectors...  ======================================')
@@ -99,26 +107,43 @@ print('')
 print('===================================  Build model...  ===============================================')
 print('')
 
-
+'''
 morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
 morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
+'''
 
-morph_embedding = Embedding(input_dim=len(morphs), output_dim=75, mask_zero=True)
+morph_seg = []
+for i in range(number_of_segmentation):
+    morph_seg[i] = Input(shape=(None,), dtype='int32')
 
+morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
+
+'''
 embed_seq_1 = morph_embedding(morph_seq_1)
 embed_seq_2 = morph_embedding(morph_seq_2)
+'''
 
-biLSTM = Bidirectional(LSTM(300, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
+embed_seg = []
+for i in range(number_of_segmentation):
+    embed_seg[i] = morph_embedding(morph_seg[i])
 
+biLSTM = Bidirectional(LSTM(200, dropout=0.2, recurrent_dropout=0.2, return_sequences=False), merge_mode='concat')
+
+'''
 encoded_seq_1 = biLSTM(embed_seq_1)
 encoded_seq_2 = biLSTM(embed_seq_2)
+'''
 
-concat_vector = concatenate([encoded_seq_1, encoded_seq_2], axis=-1)
-merge_vector = Reshape((2,600))(concat_vector)
+encoded_seg = []
+for i in range(number_of_segmentation):
+    encoded_seg[i] = biLSTM(embed_seg[i])
 
-seq_output = TimeDistributed(Dense(300))(merge_vector)
+concat_vector = concatenate(encoded_seg, axis=-1)
+merge_vector = Reshape((number_of_segmentation,400))(concat_vector)
 
-attention_1 = TimeDistributed(Dense(units=300, activation='tanh', use_bias=False))(seq_output)
+seq_output = TimeDistributed(Dense(200))(merge_vector)
+
+attention_1 = TimeDistributed(Dense(units=200, activation='tanh', use_bias=False))(seq_output)
 
 attention_2 = TimeDistributed(Dense(units=1,
                                             activity_regularizer=regularizers.l1(0.01),
@@ -143,18 +168,20 @@ attn.supports_masking = True
 attn.compute_mask = lambda inputs, mask: None
 content_flat = attn([seq_output, attention_2])
 
-model = Model(inputs=[morph_seq_1, morph_seq_2], outputs=content_flat)
+model = Model(inputs=morph_seg, outputs=content_flat)
 
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=[x_train[i] for i in range(number_of_segmentation)], y=y_train, batch_size=20, epochs=20)
+model.fit(x=x_train, y=y_train, batch_size=1, epochs=1)
 
-f_attn = K.function([model.layers[0].input, model.layers[1].input, K.learning_phase()], [model.layers[-2].output])
+f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
+                     K.learning_phase()],
+                    [model.layers[-2].output])
 
-attention_weights = f_attn([x_train[0],x_train[1],0])[0]
+attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],0])[0]
 
 print('')
 print('attention weights without softmax:\n', attention_weights)
