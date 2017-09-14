@@ -16,7 +16,7 @@ from gensim.models import Word2Vec, KeyedVectors
 from keras.utils import plot_model
 from keras.preprocessing import sequence
 
-number_of_segmentation = 4
+number_of_segmentation = 10
 
 vector_tr = '/Users/murathan/IdeaProjects/vectors.txt'
 vector_eng = '/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin'
@@ -32,7 +32,7 @@ word2sgmt = {}
 word2segmentations = {}
 seq = []
 morphs = []
-f = codecs.open('train.data.tr', encoding='utf-8')
+f = codecs.open('10.txt', encoding='utf-8')
 
 #f = codecs.open('100K_10_seg.txt', encoding='utf-8')
 for line in f:
@@ -65,10 +65,7 @@ x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
     for i in range(len(word2sgmt[word])):
         for c in word2sgmt[word][i]:
-            try:
-                x_train[i].append(morph_indices[c])
-            except IndexError as e:
-                print(c, e.message)
+            x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
 
 print('')
 for i in range(number_of_segmentation):
@@ -83,7 +80,8 @@ for i in range(number_of_segmentation):
     print(x_train[i].shape)
 
 for i in range(len(x_train)):
-    x_train[i] = sequence.pad_sequences(x_train[i], maxlen=timesteps_max_len)
+        x_train[i] = sequence.pad_sequences(x_train[i], maxlen=timesteps_max_len)
+
 
 print('')
 print('shape of Xs after padding')
