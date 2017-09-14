@@ -18,7 +18,7 @@ from keras.preprocessing import sequence
 
 number_of_segmentation = 4
 
-vector_tr = 'C:\\Users\\ahmetu\\Desktop\\Morphology Projects\\tvec.bin'
+vector_tr = '/Users/murathan/IdeaProjects/vectors.txt'
 vector_eng = '/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin'
 
 gensim_model = vector_tr
@@ -32,8 +32,9 @@ word2sgmt = {}
 word2segmentations = {}
 seq = []
 morphs = []
-
 f = codecs.open('train.data.tr', encoding='utf-8')
+
+#f = codecs.open('100K_10_seg.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -63,7 +64,11 @@ print('number of unique morphemes: ', len(set(morphs)))
 x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
     for i in range(len(word2sgmt[word])):
-        x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
+        for c in word2sgmt[word][i]:
+            try:
+                x_train[i].append(morph_indices[c])
+            except IndexError as e:
+                print(c, e.message)
 
 print('')
 for i in range(number_of_segmentation):
@@ -93,7 +98,7 @@ print('')
 y_train = []
 
 if load_pretrained_vector:
-    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=True, encoding='utf-8')
+    w2v_model = KeyedVectors.load_word2vec_format(gensim_model, binary=False, encoding='utf-8')
     for word in word2sgmt:
         y_train.append(w2v_model[word].tolist())
     y_train = numpy.array(y_train)
@@ -113,13 +118,13 @@ print('===================================  Build model...  ====================
 print('')
 
 '''
-morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
-morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
+morph_seq_1 = Input(shape=(None,), dtype='float32', name='morph_seq_1')
+morph_seq_2 = Input(shape=(None,), dtype='float32', name='morph_seq_2')
 '''
 
 morph_seg = []
 for i in range(number_of_segmentation):
-    morph_seg.append(Input(shape=(None,), dtype='int32'))
+    morph_seg.append(Input(shape=(None,), dtype='float64'))
 
 morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
 
@@ -175,7 +180,7 @@ content_flat = attn([seq_output, attention_2])
 
 model = Model(inputs=morph_seg, outputs=content_flat)
 
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
@@ -183,10 +188,12 @@ model.summary()
 model.fit(x=x_train, y=y_train, batch_size=32, epochs=20)
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
+model.layers[4].input,model.layers[5].input,model.layers[6].input,model.layers[7].input,model.layers[8].input,model.layers[9].input,
                      K.learning_phase()],
                     [model.layers[-2].output])
 
-attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],0])[0]
+attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],x_train[4],x_train[5]
+                               , x_train[6],x_train[7],x_train[8],x_train[9],0])[0]
 
 print('')
 # print('attention weights without softmax:\n', attention_weights)
