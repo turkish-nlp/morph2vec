@@ -32,9 +32,8 @@ word2sgmt = {}
 word2segmentations = {}
 seq = []
 morphs = []
-f = codecs.open('10.txt', encoding='utf-8')
 
-#f = codecs.open('100K_10_seg.txt', encoding='utf-8')
+f = codecs.open('100K_10_seg.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -64,8 +63,7 @@ print('number of unique morphemes: ', len(set(morphs)))
 x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
     for i in range(len(word2sgmt[word])):
-        for c in word2sgmt[word][i]:
-            x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
+        x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
 
 print('')
 for i in range(number_of_segmentation):
@@ -80,8 +78,7 @@ for i in range(number_of_segmentation):
     print(x_train[i].shape)
 
 for i in range(len(x_train)):
-        x_train[i] = sequence.pad_sequences(x_train[i], maxlen=timesteps_max_len)
-
+    x_train[i] = sequence.pad_sequences(x_train[i], maxlen=timesteps_max_len)
 
 print('')
 print('shape of Xs after padding')
@@ -116,13 +113,13 @@ print('===================================  Build model...  ====================
 print('')
 
 '''
-morph_seq_1 = Input(shape=(None,), dtype='float32', name='morph_seq_1')
-morph_seq_2 = Input(shape=(None,), dtype='float32', name='morph_seq_2')
+morph_seq_1 = Input(shape=(None,), dtype='int32', name='morph_seq_1')
+morph_seq_2 = Input(shape=(None,), dtype='int32', name='morph_seq_2')
 '''
 
 morph_seg = []
 for i in range(number_of_segmentation):
-    morph_seg.append(Input(shape=(None,), dtype='float64'))
+    morph_seg.append(Input(shape=(None,), dtype='int32'))
 
 morph_embedding = Embedding(input_dim=len(morphs), output_dim=50, mask_zero=True)
 
@@ -183,15 +180,14 @@ model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=x_train, y=y_train, batch_size=32, epochs=20)
+model.fit(x=x_train, y=y_train, batch_size=256, epochs=20)
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
 model.layers[4].input,model.layers[5].input,model.layers[6].input,model.layers[7].input,model.layers[8].input,model.layers[9].input,
                      K.learning_phase()],
                     [model.layers[-2].output])
 
-attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],x_train[4],x_train[5]
-                               , x_train[6],x_train[7],x_train[8],x_train[9],0])[0]
+attention_weights = f_attn([x_train[0],x_train[1],x_train[2],x_train[3],x_train[4],x_train[5],x_train[6],x_train[7],x_train[8],x_train[9],0])[0]
 
 print('')
 # print('attention weights without softmax:\n', attention_weights)
