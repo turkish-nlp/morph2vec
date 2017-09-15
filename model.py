@@ -33,7 +33,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('100K_10_seg.txt', encoding='utf-8')
+f = codecs.open('100K_10seg.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
