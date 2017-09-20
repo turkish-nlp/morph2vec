@@ -1,19 +1,20 @@
 from __future__ import print_function
 from __future__ import unicode_literals
-import sys
+
 import codecs
-import numpy
-from keras.engine import Model
-from keras.layers.embeddings import Embedding
-from keras.layers.recurrent import LSTM
-from keras.layers.core import Flatten, Dense, Activation, Lambda, Reshape
-from keras.layers import Input
-from keras.layers.wrappers import TimeDistributed, Bidirectional
-from keras import regularizers
-from keras.layers.merge import concatenate
+import sys
+
 import keras.backend as K
-from gensim.models import Word2Vec, KeyedVectors
-from keras.utils import plot_model
+import numpy
+from gensim.models import KeyedVectors
+from keras import regularizers
+from keras.engine import Model
+from keras.layers import Input
+from keras.layers.core import Dense, Lambda, Reshape
+from keras.layers.embeddings import Embedding
+from keras.layers.merge import concatenate
+from keras.layers.recurrent import LSTM
+from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras.preprocessing import sequence
 
 number_of_segmentation = 10
@@ -33,7 +34,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('100K_10seg.txt', encoding='utf-8')
+f = codecs.open('input_96K_35_20.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -180,7 +181,7 @@ model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=x_train, y=y_train, batch_size=256, epochs=20)
+model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[1]), epochs=int(sys.argv[2]))
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
 model.layers[4].input,model.layers[5].input,model.layers[6].input,model.layers[7].input,model.layers[8].input,model.layers[9].input,
@@ -218,10 +219,15 @@ for i in range(len(attention_soft_weights)):
 
 indx = 0
 segmentations = {}
+file = codecs.open("selected_segmentations_" + sys.argv[1] + "_"+ sys.argv[2] +".txt", "w", "utf-8")
+
 for word in word2sgmt:
     segmentations[word]= word2segmentations[word][selecteds[0]]
-    print(word +' : '+ segmentations[word])
+    #print(word +' : '+ segmentations[word])
+    file.write(word +' : '+ segmentations[word] + "\n")
     indx = indx + 1
+
+file.close()
 
 
 '''
