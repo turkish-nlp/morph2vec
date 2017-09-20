@@ -19,7 +19,7 @@ from keras.preprocessing import sequence
 
 number_of_segmentation = 10
 
-vector_tr = '/Users/murathan/IdeaProjects/vectors.txt'
+vector_tr = sys.argv[1]
 vector_eng = '/Users/ahmet/Desktop/Corpus/GoogleNews-vectors-negative300.bin'
 
 gensim_model = vector_tr
@@ -181,7 +181,7 @@ model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[1]), epochs=int(sys.argv[2]))
+model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[2]), epochs=int(sys.argv[3]))
 
 f_attn = K.function([model.layers[0].input, model.layers[1].input, model.layers[2].input, model.layers[3].input,
 model.layers[4].input,model.layers[5].input,model.layers[6].input,model.layers[7].input,model.layers[8].input,model.layers[9].input,
@@ -219,7 +219,7 @@ for i in range(len(attention_soft_weights)):
 
 indx = 0
 segmentations = {}
-file = codecs.open("selected_segmentations_" + sys.argv[1] + "_"+ sys.argv[2] +".txt", "w", "utf-8")
+file = codecs.open("selected_segmentations_" + sys.argv[2] + "_"+ sys.argv[3] +".txt", "w", "utf-8")
 
 for word in word2sgmt:
     segmentations[word]= word2segmentations[word][selecteds[0]]
