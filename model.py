@@ -16,6 +16,26 @@ from keras.layers.merge import concatenate
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras.preprocessing import sequence
+from keras.utils import plot_model
+import pydot
+import graphviz
+import resource
+
+
+def memory_limit():
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    resource.setrlimit(resource.RLIMIT_AS, (get_memory() * 1024 / 2, hard))
+
+def get_memory():
+    with open('/proc/meminfo', 'r') as mem:
+        free_memory = 0
+        for i in mem:
+            sline = i.split()
+            if str(sline[0]) in ('MemFree:', 'Buffers:', 'Cached:'):
+                free_memory += int(sline[1])
+    return free_memory
+
+memory_limit()
 
 number_of_segmentation = 10
 
@@ -179,7 +199,7 @@ model = Model(inputs=morph_seg, outputs=content_flat)
 model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
-# plot_model(model, show_shapes=True, to_file='model.png')
+plot_model(model, show_shapes=True, to_file='model.png')
 
 model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[2]), epochs=int(sys.argv[3]))
 
