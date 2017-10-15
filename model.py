@@ -237,6 +237,7 @@ for i in range(len(attention_soft_weights)):
             max[i] = attention_soft_weights[i][j]
             selecteds[i] = j
 
+
 indx = 0
 segmentations = {}
 file = codecs.open("selected_segmentations_" + sys.argv[2] + "_"+ sys.argv[3] +".txt", "w", "utf-8")
