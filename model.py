@@ -17,14 +17,14 @@ from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras.preprocessing import sequence
 from keras.utils import plot_model
-import pydot
-import graphviz
 import resource
 
 
-def memory_limit():
+'''
+ def memory_limit():
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-    resource.setrlimit(resource.RLIMIT_AS, (get_memory() * 1024 / 2, hard))
+    print(get_memory() * 1024 / 20)
+    resource.setrlimit(resource.RLIMIT_AS, (10000000000, hard))
 
 def get_memory():
     with open('/proc/meminfo', 'r') as mem:
@@ -36,7 +36,7 @@ def get_memory():
     return free_memory
 
 memory_limit()
-
+'''
 number_of_segmentation = 10
 
 vector_tr = sys.argv[1]
@@ -54,7 +54,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('input_96K_35_20.txt', encoding='utf-8')
+f = codecs.open('100K_10seg-v2.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -199,7 +199,7 @@ model = Model(inputs=morph_seg, outputs=content_flat)
 model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 
 model.summary()
-plot_model(model, show_shapes=True, to_file='model.png')
+#plot_model(model, show_shapes=True, to_file='model.png')
 
 model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[2]), epochs=int(sys.argv[3]))
 
