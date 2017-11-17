@@ -54,7 +54,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('input_96K_35_20.txt', encoding='utf-8')
+f = codecs.open('new_data_17_nov.txt', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -74,9 +74,7 @@ for sgmt in seq:
 print ('number of words: ', len(word2sgmt))
 
 morph_indices = dict((c, i+1) for i, c in enumerate(set(morphs)))
-indices_morph = dict((i+1, c) for i, c in enumerate(set(morphs)))
-
-print('morpheme indices: ', indices_morph)
+morph_indices['###'] = 0
 
 print('number of morphemes: ', len(morphs))
 print('number of unique morphemes: ', len(set(morphs)))
