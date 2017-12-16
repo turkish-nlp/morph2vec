@@ -57,6 +57,8 @@ print('number of words: ', len(word2sgmt))
 morph_indices = dict((c, i + 1) for i, c in enumerate(set(morphs)))
 morph_indices['###'] = 0
 
+indices_morph = dict((i+1, c) for i, c in enumerate(set(morphs)))
+
 print('number of morphemes: ', len(morphs))
 print('number of unique morphemes: ', len(set(morphs)))
 
@@ -108,7 +110,7 @@ morph_seg = []
 for i in range(number_of_segmentation):
     morph_seg.append(Input(shape=(None,), dtype='int32'))
 
-morph_embedding = Embedding(input_dim=len(set(morphs)), output_dim=50, mask_zero=True, name="embeddding")
+morph_embedding = Embedding(input_dim=len(set(morphs))+1, output_dim=50, mask_zero=True, name="embeddding")
 
 embed_seg = []
 for i in range(number_of_segmentation):

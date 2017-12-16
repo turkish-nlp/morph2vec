@@ -19,7 +19,40 @@ from keras.preprocessing import sequence
 
 number_of_segmentation = 10
 
-number_of_unique_morpheme = 7
+number_of_unique_morpheme = 8
+
+print('===================================  Prepare data...  ==============================================')
+print('')
+
+word2sgmt = {}
+word2segmentations = {}
+seq = []
+morphs = []
+
+f = codecs.open('sample.txt', encoding='utf-8')
+for line in f:
+    line = line.rstrip('\n')
+    word, sgmnts = line.split(':')
+    sgmt = sgmnts.split('+')
+    word2segmentations[word] = list(s for s in sgmt)
+    sgmt = list(s.split('-') for s in sgmt)
+    word2sgmt[word] = sgmt
+    seq.extend(sgmt)
+
+timesteps_max_len = 0
+
+for sgmt in seq:
+    if len(sgmt) > timesteps_max_len: timesteps_max_len = len(sgmt)
+    for morph in sgmt:
+        morphs.append(morph)
+
+print('number of words: ', len(word2sgmt))
+
+morph_indices = dict((c, i + 1) for i, c in enumerate(set(morphs)))
+morph_indices['###'] = 0
+
+indices_morph = dict((i+1, c) for i, c in enumerate(set(morphs)))
+indices_morph[0] = '###'
 
 print('')
 print('===================================  Load Input and Output...  ===============================================')
@@ -35,7 +68,7 @@ morph_seg = []
 for i in range(number_of_segmentation):
     morph_seg.append(Input(shape=(None,), dtype='int32'))
 
-morph_embedding = Embedding(input_dim=7, output_dim=50, mask_zero=True, name="embeddding")
+morph_embedding = Embedding(input_dim=number_of_unique_morpheme, output_dim=50, mask_zero=True, name="embeddding")
 
 embed_seg = []
 for i in range(number_of_segmentation):
@@ -108,4 +141,14 @@ s_model = Model(inputs=model.input, outputs=content_w)
 model.summary()
 
 q = s_model.predict([x_train[i] for i in range(len(x_train))])
-print(q)
+#print(q)
+
+max = -numpy.inf
+for i in range(len(q)):
+    max_index = numpy.argmax(q[i])
+    #print(x_train[max_index][i])
+    s = ""
+    for k in x_train[max_index][i]:
+        if k != 0:
+            s = s + indices_morph[k] + " "
+    print(s)
