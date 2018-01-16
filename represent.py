@@ -29,7 +29,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('sample.txt', encoding='utf-8')
+f = codecs.open('training.tr', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -123,6 +123,7 @@ for i in range(len(m_w[0])):
 
 import cPickle as pickle
 with open('vectors.p', 'wb') as fp:
-    pickle.dump(m_vectors, fp)
+    pickle.dump(m_vectors, fp, protocol=pickle.HIGHEST_PROTOCOL)
 
-print(m_vectors)
+
+

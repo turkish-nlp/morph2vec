@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function
 from __future__ import unicode_literals
 
@@ -61,7 +62,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('sample.tr', encoding='utf-8')
+f = codecs.open('deneyler/wordsim2-revised', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -86,7 +87,10 @@ print('number of unique morphemes: ', len(set(morphs)))
 x_train = [[] for i in range(number_of_segmentation)]
 for word in word2sgmt:
     for i in range(len(word2sgmt[word])):
-        x_train[i].append([morph_indices[c] for c in word2sgmt[word][i]])
+        try:
+            x_train[i].append([morph_indices[c.lower()] for c in word2sgmt[word][i]])
+        except KeyError:
+            print(c)
 
 for i in range(number_of_segmentation):
     x_train[i] = numpy.array(x_train[i])
@@ -146,23 +150,44 @@ attn = Lambda(attn_merge, output_shape=attn_merge_shape)
 attn.supports_masking = True
 attn.compute_mask = lambda inputs, mask: None
 content_flat = attn([seq_output, attention_2])
-
 model = Model(inputs=morph_seg, outputs=content_flat)
 
 model.load_weights("weights.h5")
 
 q = model.predict([x_train[i] for i in range(len(x_train))])
-print(x_train[0])
-print(q)
+
+wordVectorMap = {}
+
+s = ""
+for x in range(0, len(x_train[0])):
+    for i in x_train[0][x]:
+        s = s + indices_morph[i]
+    s= s.replace("#","")
+    wordVectorMap[s] = q[x]
+    print(s)
+    s = ""
+
+import cPickle as pickle
+with open('wordsim2-revised.p', 'wb') as fp:
+    pickle.dump(wordVectorMap, fp, protocol=pickle.HIGHEST_PROTOCOL)
+
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+'''
+
+#######
+
 
 kitap = {}
-f = codecs.open('kitap.tr', encoding='utf-8')
+f = codecs.open('anahtar.tr', encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     key = line.split(' ')[0]
     kitap[key] = numpy.fromstring(' '.join(line.split(' ')[1:-1]), dtype=float, sep=' ')
 
-from sklearn.metrics.pairwise import cosine_similarity
-avg = 0
 for key in set(kitap):
     print(key, "  ", cosine_similarity(q.reshape(1,-1) , kitap[key].reshape(1,-1))[0][0])
+
+
+'''
