@@ -35,7 +35,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open('training.tr', encoding='utf-8')
+f = codecs.open(sys.argv[0], encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
