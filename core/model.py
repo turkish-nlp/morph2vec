@@ -21,7 +21,7 @@ import resource
 
 number_of_segmentation = 10
 
-vector = sys.argv[1]
+vector = sys.argv[2]
 
 gensim_model = vector
 
@@ -35,7 +35,7 @@ word2segmentations = {}
 seq = []
 morphs = []
 
-f = codecs.open(sys.argv[0], encoding='utf-8')
+f = codecs.open(sys.argv[1], encoding='utf-8')
 for line in f:
     line = line.rstrip('\n')
     word, sgmnts = line.split(':')
@@ -162,7 +162,7 @@ model.compile(loss='cosine_proximity', optimizer='adam', metrics=['accuracy'])
 model.summary()
 # plot_model(model, show_shapes=True, to_file='model.png')
 
-model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[2]), epochs=int(sys.argv[3]))
+model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[3]), epochs=int(sys.argv[4]))
 
 print('')
 print('===================================  Save model weights...  ===============================================')
