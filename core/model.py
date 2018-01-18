@@ -110,7 +110,7 @@ morph_seg = []
 for i in range(number_of_segmentation):
     morph_seg.append(Input(shape=(None,), dtype='int32'))
 
-morph_embedding = Embedding(input_dim=len(set(morphs))+1, output_dim=200, mask_zero=True, name="embeddding")
+morph_embedding = Embedding(input_dim=len(set(morphs))+1, output_dim=50, mask_zero=True, name="embeddding")
 
 embed_seg = []
 for i in range(number_of_segmentation):
