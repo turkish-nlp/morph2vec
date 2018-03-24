@@ -162,7 +162,7 @@ attn_morpheme.compute_mask = lambda inputs, mask: None
 
 attn_morpheme_output_seq = []
 for i in range(number_of_segmentation):
-    attn_morpheme_output_seq.append(attn_morpheme([encoded_seg[i], attention_morpheme_softmax[i]]))
+    attn_morpheme_output_seq.append(attn_morpheme([encoded_seg[i], attn_soft_seq[i]]))
 
 concat_vector = concatenate(attn_morpheme_output_seq, axis=-1)
 merge_vector = Reshape((number_of_segmentation, 400))(concat_vector)
