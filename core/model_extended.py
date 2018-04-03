@@ -17,6 +17,7 @@ from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import TimeDistributed, Bidirectional
 from keras.preprocessing import sequence
 from keras.utils import plot_model
+import theano.tensor as T
 import resource
 
 number_of_segmentation = 10
@@ -89,7 +90,7 @@ if load_pretrained_vector:
         'ERROR: Pre-trained vectors do not contain all words in wordlist !!')
     print('number of pre-trained vectors: ', len(w2v_model.vocab))
 else:
-    y_train = numpy.array([[4, 5, 2], [2, 4, 1], [2, 4, 1], [2, 4, 1], [4, 6, 2], [5, 1, 2]])
+    y_train = numpy.array([[14, 5, 2], [12, 4, 15], [2, 13, 6], [7, 11, 9]])
 
 print('number of words found: ', len(y_train))
 
@@ -105,19 +106,6 @@ numpy.save("y_train", y_train)
 print('')
 print('===================================  Build model...  ===============================================')
 print('')
-
-def attn_merge(inputs, mask):
-    vectors = inputs[0]
-    logits = inputs[1]
-    # Flatten the logits and take a softmax
-    logits = K.squeeze(logits, axis=2)
-    pre_softmax = K.switch(mask[0], logits, -numpy.inf)
-    weights = K.expand_dims(K.softmax(pre_softmax))
-    return K.sum(vectors * weights, axis=1)
-
-
-def attn_merge_shape(input_shapes):
-    return (input_shapes[0][0], input_shapes[0][2])
 
 morph_seg = []
 for i in range(number_of_segmentation):
@@ -156,7 +144,23 @@ attn_soft_seq = []
 for i in range(number_of_segmentation):
     attn_soft_seq.append(attention_morpheme_softmax(attn_nonlinear_seq[i]))
 
-attn_morpheme = Lambda(attn_merge, output_shape=attn_merge_shape)
+def attn_morph_merge(inputs, mask):
+    vectors = inputs[0]
+    logits = inputs[1]
+    # Flatten the logits and take a softmax
+    logits = K.squeeze(logits, axis=2)
+    pre_softmax = K.switch(mask[0], logits, -numpy.inf)
+    softmax = K.softmax(pre_softmax)
+    post_softmax = T.switch(T.isnan(softmax), 0., softmax)
+    weights = K.expand_dims(post_softmax)
+    return K.sum(vectors * weights, axis=1)
+
+
+def attn__morph_merge_shape(input_shapes):
+    return (input_shapes[0][0], input_shapes[0][2])
+
+
+attn_morpheme = Lambda(attn_morph_merge, output_shape=attn__morph_merge_shape)
 attn_morpheme.supports_masking = True
 attn_morpheme.compute_mask = lambda inputs, mask: None
 
@@ -176,6 +180,18 @@ attention_1 = TimeDistributed(Dense(units=200, activation='tanh', use_bias=False
 attention_2 = TimeDistributed(Dense(units=1,
                                     activity_regularizer=regularizers.l1(0.01),
                                     use_bias=False))(attention_1)
+def attn_merge(inputs, mask):
+    vectors = inputs[0]
+    logits = inputs[1]
+    # Flatten the logits and take a softmax
+    logits = K.squeeze(logits, axis=2)
+    pre_softmax = K.switch(mask[0], logits, -numpy.inf)
+    weights = K.expand_dims(K.softmax(pre_softmax))
+    return K.sum(vectors * weights, axis=1)
+
+
+def attn_merge_shape(input_shapes):
+    return (input_shapes[0][0], input_shapes[0][2])
 
 attn = Lambda(attn_merge, output_shape=attn_merge_shape)
 attn.supports_masking = True
@@ -191,6 +207,27 @@ model.summary()
 
 model.fit(x=x_train, y=y_train, batch_size=int(sys.argv[3]), epochs=int(sys.argv[4]))
 
+'''
+
+print('')
+print('===================================  Print Layer weights...  ================================================')
+print('')
+
+print('train data\n', x_train)
+
+print('')
+print('===================================  Print predicted weights...  ================================================')
+print('')
+
+test_model = Model(inputs=model.input, outputs=seq_output)
+print(test_model.predict(x_train))
+
+print('')
+
+test_model_2 = Model(inputs=model.input, outputs=content_flat)
+print(test_model_2.predict(x_train))
+
+'''
 print('')
 print('===================================  Save model weights...  ===============================================')
 print('')
